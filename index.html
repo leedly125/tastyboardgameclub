@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>tastyboardgameclub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+      background: #0b0b0f;
+      color: #f8f8ff;
+    }
+
+    header {
+      padding: 12px 16px;
+      background: #15151b;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      font-size: 18px;
+    }
+
+    header span {
+      font-size: 11px;
+      opacity: 0.7;
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 52px);
+    }
+
+    /* 지도 자리 */
+    #map {
+      flex: 1;
+      background: radial-gradient(circle at top, #272738 0, #050509 55%);
+    }
+
+    .right-panel {
+      max-height: 50vh;
+      background: rgba(0, 0, 0, 0.9);
+      padding: 8px 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      opacity: 0.8;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .chip {
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      opacity: 0.85;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .chip.active {
+      background: #ff4b4b;
+      border-color: #ff4b4b;
+      color: #fff;
+      opacity: 1;
+    }
+
+    .place-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .place-item {
+      padding: 8px 6px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .place-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .place-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .place-name {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .place-menu {
+      font-size: 11px;
+      opacity: 0.75;
+    }
+
+    .place-rating {
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .kimchi-detail {
+      font-size: 11px;
+      color: #ffb3b3;
+    }
+
+    .place-tags {
+      font-size: 11px;
+      opacity: 0.85;
+    }
+
+    .place-memo {
+      font-size: 11px;
+      opacity: 0.9;
+      line-height: 1.35;
+    }
+
+    /* 새 맛집 추가 폼 */
+    .add-form {
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 8px 8px 10px;
+      background: rgba(255, 255, 255, 0.02);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 11px;
+    }
+
+    .add-form-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .add-form label {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex: 1;
+    }
+
+    .add-form input,
+    .add-form select,
+    .add-form textarea {
+      width: 100%;
+      padding: 4px 6px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(0, 0, 0, 0.6);
+      color: #f8f8ff;
+      font-size: 11px;
+      resize: vertical;
+    }
+
+    .add-form textarea {
+      min-height: 40px;
+      max-height: 80px;
+    }
+
+    .add-form button {
+      margin-top: 4px;
+      align-self: flex-end;
+      padding: 5px 10px;
+      font-size: 11px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      background: #ff4b4b;
+      color: #fff;
+    }
+
+    .add-form button:hover {
+      opacity: 0.9;
+    }
+
+    @media (min-width: 768px) {
+      main {
+        flex-direction: row;
+        height: calc(100vh - 60px);
+      }
+
+      #map {
+        flex: 2;
+      }
+
+      .right-panel {
+        flex: 1;
+        max-height: none;
+        border-top: none;
+        border-left: 1px solid rgba(255, 255, 255, 0.08);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>tastyboardgameclub</h1>
+    <span>보드게임 모임의 맛집 아카이브</span>
+  </header>
+
+  <main>
+    <div id="map"></div>
+
+    <div class="right-panel">
+      <!-- 카테고리 필터 -->
+      <div>
+        <div class="section-title">카테고리</div>
+        <div class="chip-row" id="categoryRow">
+          <button class="chip active" data-category="all">전체</button>
+          <button class="chip" data-category="kimchi">김치찌개</button>
+          <button class="chip" data-category="porkcutlet">돈까스</button>
+          <button class="chip" data-category="curry">카레</button>
+        </div>
+      </div>
+
+      <!-- 키워드 / 기본맛 필터 -->
+      <div>
+        <div class="section-title">키워드 / 기본맛</div>
+        <div class="chip-row" id="tagRow">
+          <button class="chip" data-tag="진한맛">진한맛</button>
+          <button class="chip" data-tag="시원한맛">시원한맛</button>
+          <button class="chip" data-tag="시큼얼큰">시큼얼큰</button>
+          <button class="chip" data-tag="mild">맵지않음</button>
+          <button class="chip" data-tag="혼밥가능">혼밥가능</button>
+          <button class="chip" data-tag="술안주">술안주 좋음</button>
+        </div>
+      </div>
+
+      <!-- 새 맛집 추가 폼 -->
+      <div>
+        <div class="section-title">
+          <span>새 맛집 추가</span>
+          <span style="font-size:10px; opacity:.65;">(이 브라우저에만 저장됨)</span>
+        </div>
+        <form class="add-form" id="addForm">
+          <div class="add-form-row">
+            <label>
+              가게 이름
+              <input type="text" id="inputName" required />
+            </label>
+          </div>
+          <div class="add-form-row">
+            <label>
+              카테고리
+              <select id="inputCategory">
+                <option value="kimchi">김치찌개</option>
+                <option value="porkcutlet">돈까스</option>
+                <option value="curry">카레</option>
+              </select>
+            </label>
+            <label>
+              메뉴
+              <input type="text" id="inputMenu" placeholder="예: 김치찌개, 등심 돈까스" />
+            </label>
+          </div>
+          <div class="add-form-row">
+            <label>
+              기본맛 (김치찌개일 때)
+              <select id="inputBaseFlavor">
+                <option value="">선택 안 함</option>
+                <option value="진한맛">진한맛</option>
+                <option value="시원한맛">시원한맛</option>
+                <option value="시큼얼큰">시큼얼큰</option>
+                <option value="mild">맵지않음</option>
+              </select>
+            </label>
+            <label>
+              별점(1~5)
+              <input type="number" id="inputRating" min="1" max="5" step="0.1" value="4.0" />
+            </label>
+          </div>
+          <label>
+            메모
+            <textarea id="inputMemo" placeholder="맛, 분위기, 누가 같이 갔는지 등"></textarea>
+          </label>
+          <label>
+            태그 (쉼표로 구분, 예: 얼큰, 혼밥가능)
+            <input type="text" id="inputTags" />
+          </label>
+          <button type="submit">추가하기</button>
+        </form>
+      </div>
+
+      <!-- 맛집 리스트 -->
+      <div>
+        <div class="section-title">맛집 리스트</div>
+        <div class="place-list" id="placeList"></div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // ---- 기본 데이터 (최초용) ----
+    const defaultPlaces = [
+      {
+        name: "을지로 김치찌개집 A",
+        category: "kimchi",
+        menu: "김치찌개",
+        baseFlavor: "진한맛",
+        rating: 4.8,
+        kimchiType: "진한 돼지고기 베이스 + 살짝 시큼한 국물",
+        memo: "국물 리필 계속하게 됨. 밥 비벼 먹기 최고. 술 한잔 곁들이기 좋음.",
+        tags: ["얼큰", "술안주", "직장인많음"]
+      },
+      {
+        name: "성수 김치찌개집 C",
+        category: "kimchi",
+        menu: "김치찌개",
+        baseFlavor: "시원한맛",
+        rating: 4.2,
+        kimchiType: "덜 매운 편, 시원하고 담백한 국물",
+        memo: "매운 거 잘 못 먹는 사람도 안전한 김치찌개. 반찬 푸짐.",
+        tags: ["mild", "가족모임", "밥많이"]
+      },
+      {
+        name: "홍대 돈까스집 B",
+        category: "porkcutlet",
+        menu: "등심 돈까스",
+        baseFlavor: "",
+        rating: 4.3,
+        kimchiType: "",
+        memo: "겉은 바삭, 속은 촉촉. 혼밥 자리 많고 소스 맛이 묘하게 중독적.",
+        tags: ["혼밥가능", "돈까스"]
+      }
+    ];
+
+    // ---- localStorage에서 불러오기 / 저장하기 ----
+    const STORAGE_KEY = "tastyboardgameclub_places";
+
+    function loadPlaces() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return [...defaultPlaces];
+      try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [...defaultPlaces];
+      } catch {
+        return [...defaultPlaces];
+      }
+    }
+
+    function savePlaces() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(places));
+    }
+
+    let places = loadPlaces();
+    let currentCategory = "all";
+    let currentTag = null;
+
+    const categoryRow = document.getElementById("categoryRow");
+    const tagRow = document.getElementById("tagRow");
+    const placeListEl = document.getElementById("placeList");
+    const addForm = document.getElementById("addForm");
+
+    function renderStars(rating) {
+      const full = Math.floor(rating);
+      const half = rating - full >= 0.5;
+      const empty = 5 - full - (half ? 1 : 0);
+
+      return "★".repeat(full) +
+        (half ? "☆" : "") +
+        "·".repeat(empty);
+    }
+
+    function categoryLabel(cat) {
+      switch (cat) {
+        case "kimchi": return "김치찌개";
+        case "porkcutlet": return "돈까스";
+        case "curry": return "카레";
+        default: return cat;
+      }
+    }
+
+    function applyFilters() {
+      return places.filter(p => {
+        if (currentCategory !== "all" && p.category !== currentCategory) return false;
+
+        if (currentTag) {
+          const inTags = p.tags && p.tags.some(t => t.includes(currentTag));
+          const inBaseFlavor = p.baseFlavor && p.baseFlavor.includes(currentTag);
+          if (!inTags && !inBaseFlavor) return false;
+        }
+        return true;
+      });
+    }
+
+    function renderPlaceList() {
+      const filtered = applyFilters();
+
+      if (!filtered.length) {
+        placeListEl.innerHTML = `<div style="font-size:12px; opacity:.7; padding:6px 2px;">
+          조건에 맞는 맛집이 아직 없어요. 나중에 추가 예정!
+        </div>`;
+        return;
+      }
+
+      const html = filtered.map(p => `
+        <div class="place-item">
+          <div class="place-header-row">
+            <div>
+              <div class="place-name">${p.name}</div>
+              <div class="place-menu">${categoryLabel(p.category)} · ${p.menu || ""}</div>
+            </div>
+            <div class="place-rating">${renderStars(p.rating)} (${Number(p.rating).toFixed(1)})</div>
+          </div>
+          ${
+            p.category === "kimchi" && (p.baseFlavor || p.kimchiType)
+              ? `<div class="kimchi-detail">
+                  기본맛: ${p.baseFlavor || "-"}${
+                  p.kimchiType ? " · " + p.kimchiType : ""
+                }
+                </div>`
+              : ""
+          }
+          <div class="place-tags">
+            ${(p.tags || []).map(tag => `#${tag}`).join(" ")}
+          </div>
+          <div class="place-memo">${p.memo || ""}</div>
+        </div>
+      `).join("");
+
+      placeListEl.innerHTML = html;
+    }
+
+    // 카테고리 버튼
+    categoryRow.addEventListener("click", (e) => {
+      const chip = e.target.closest(".chip");
+      if (!chip) return;
+      [...categoryRow.children].forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+      currentCategory = chip.dataset.category;
+      renderPlaceList();
+    });
+
+    // 태그 버튼
+    tagRow.addEventListener("click", (e) => {
+      const chip = e.target.closest(".chip");
+      if (!chip) return;
+      const tag = chip.dataset.tag;
+      if (currentTag === tag) {
+        currentTag = null;
+        chip.classList.remove("active");
+      } else {
+        currentTag = tag;
+        [...tagRow.children].forEach(c => c.classList.remove("active"));
+        chip.classList.add("active");
+      }
+      renderPlaceList();
+    });
+
+    // 새 맛집 추가 폼
+    addForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById("inputName").value.trim();
+      const category = document.getElementById("inputCategory").value;
+      const menu = document.getElementById("inputMenu").value.trim();
+      const baseFlavor = document.getElementById("inputBaseFlavor").value;
+      const rating = parseFloat(document.getElementById("inputRating").value) || 0;
+      const memo = document.getElementById("inputMemo").value.trim();
+      const tagsRaw = document.getElementById("inputTags").value.trim();
+
+      if (!name) {
+        alert("가게 이름은 꼭 적어줘!");
+        return;
+      }
+
+      const tags = tagsRaw
+        ? tagsRaw.split(",").map(t => t.trim()).filter(Boolean)
+        : [];
+
+      const newPlace = {
+        name,
+        category,
+        menu,
+        baseFlavor,
+        rating,
+        kimchiType: "", // 나중에 필요하면 폼에 필드 추가
+        memo,
+        tags
+      };
+
+      places.push(newPlace);
+      savePlaces();
+      renderPlaceList();
+
+      addForm.reset();
+      document.getElementById("inputRating").value = "4.0";
+    });
+
+    // 초기 렌더
+    renderPlaceList();
+  </script>
+</body>
+
+</html>
